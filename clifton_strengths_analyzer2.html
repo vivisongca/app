@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CliftonStrength Report Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Noto+Serif+SC:wght@300;400;700&display=swap');
+
+        /* Custom Colors based on description */
+        .bg-midnight { background-color: #020617; /* Deepest Slate/Midnight */ }
+        .text-champagne { color: #F4E6C9; /* Lighter Champagne */ }
+        .text-gold-accent { color: #D4AF37; /* Richer Gold */ }
+        .border-gold-glow { 
+            border: 2px solid #D4AF37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+        }
+        
+        /* Font overrides */
+        .font-serif-custom { font-family: 'Playfair Display', 'Noto Serif SC', serif; }
+        .font-sans-custom { font-family: 'Lato', sans-serif; }
+
+        /* Constellation Background Effect */
+        .bg-constellation {
+            background-color: #0a1025;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+        }
+
+        /* Glassmorphism for Grid */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Animation */
+        .fade-in-down { animation: fadeInDown 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translate3d(0, -30px, 0); }
+            to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans-custom text-slate-800 flex flex-col md:flex-row">
+
+    <!-- LEFT PANEL: INPUTS -->
+    <div class="w-full md:w-1/3 lg:w-1/4 bg-white p-6 shadow-xl overflow-y-auto h-auto md:h-screen sticky top-0 border-r border-gray-200 z-10">
+        <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+            <i data-lucide="settings-2" class="w-6 h-6"></i> Gallup Strength Report Analyzer 盖洛普优势报告解析
+        </h2>
+
+        <form id="analyzerForm" class="space-y-4">
+            
+            <!-- Section 1: Personal Info -->
+            <div class="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="font-semibold text-slate-700 text-sm uppercase tracking-wider">1. Profile (个人信息)</h3>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">Name (姓名) </label>
+                    <input type="text" id="inputName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="e.g. John Doe" required>
+                </div>
+                <!-- Age/Country/City collected but hidden from letter -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600">Age (年龄）</label>
+                        <input type="number" id="inputAge" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="35" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600">Country (国家)</label>
+                        <input type="text" id="inputCountry" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="USA" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">City (所在城市)</label>
+                    <input type="text" id="inputCity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="New York" required>
+                </div>
+            </div>
+
+            <!-- Section 2: Interpretation Perspective -->
+            <div class="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="font-semibold text-slate-700 text-sm uppercase tracking-wider">2. Context (应用场景)</h3>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600">Interpretation Role (选一个角色)</label>
+                    <select id="inputRole" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border">
+                        <option value="General">General (通用)</option>
+                        <option value="Gallup Strength Coach">Gallup Strength Coach (盖洛普优势教练)</option>
+                        <option value="Senior Executive Leaders">Senior Executive Leaders (高管)</option>
+                        <option value="Managers">Managers (经理人)</option>
+                        <option value="Sales">Sales (销售)</option>
+                        <option value="Employee - Technical">Employee - Technical (员工-技术型)</option>
+                        <option value="Employee - Service">Employee - Service (员工-服务型)</option>
+                        <option value="Social Media KOL">Social Media KOL (自媒体博主/意见领袖)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 3: Themes -->
+            <div class="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="font-semibold text-slate-700 text-sm uppercase tracking-wider">3. Talent Themes (才干主题)</h3>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">List Your 34 Themes in Order (34才干主题排序)</label>
+                    <textarea id="inputThemes" rows="6" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="1. Achiever&#10;2. Learner&#10;3. Strategic&#10;..." required></textarea>
+                    <p class="text-xs text-slate-400 mt-1">Paste your list (English or Chinese). We will extract the top 12.</p>
+                </div>
+            </div>
+
+            <!-- Section 4: Domains -->
+            <div class="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="font-semibold text-slate-700 text-sm uppercase tracking-wider">4. Strength Domains (优势领域)</h3>
+                <p class="text-xs text-slate-500 mb-2">Enter percentage (0-100) based on the stacked bar chart on page 21 of 34 report. 根据34才干报告第21页的横条比例填写百分比。</p>
+                
+                <div class="flex gap-2 items-center">
+                    <select class="domain-select flex-1 text-sm border-gray-300 rounded p-1 border bg-white" disabled>
+                        <option selected>Strategic Thinking 战略思维领域</option>
+                    </select>
+                    <input type="number" id="scoreStrategic" class="domain-score w-20 text-sm border-gray-300 rounded p-1 border" placeholder="%" min="0" max="100">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <select class="domain-select flex-1 text-sm border-gray-300 rounded p-1 border bg-white" disabled>
+                        <option selected>Influencing 影响力领域</option>
+                    </select>
+                    <input type="number" id="scoreInfluencing" class="domain-score w-20 text-sm border-gray-300 rounded p-1 border" placeholder="%" min="0" max="100">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <select class="domain-select flex-1 text-sm border-gray-300 rounded p-1 border bg-white" disabled>
+                        <option selected>Executing 执行力领域</option>
+                    </select>
+                    <input type="number" id="scoreExecuting" class="domain-score w-20 text-sm border-gray-300 rounded p-1 border" placeholder="%" min="0" max="100">
+                </div>
+                <div class="flex gap-2 items-center">
+                    <select class="domain-select flex-1 text-sm border-gray-300 rounded p-1 border bg-white" disabled>
+                        <option selected>Relationship Building 关系建立领域</option>
+                    </select>
+                    <input type="number" id="scoreRelationship" class="domain-score w-20 text-sm border-gray-300 rounded p-1 border" placeholder="%" min="0" max="100">
+                </div>
+            </div>
+
+            <button type="button" onclick="generateReport()" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                Generate Analysis
+            </button>
+        </form>
+    </div>
+
+    <!-- RIGHT PANEL: OUTPUT -->
+    <div class="w-full md:w-2/3 lg:w-3/4 bg-slate-200 p-4 md:p-8 overflow-y-auto h-auto md:h-screen" id="outputContainer">
+        
+        <!-- Welcome / Empty State -->
+        <div id="emptyState" class="flex flex-col items-center justify-center h-full text-slate-500 opacity-60">
+            <i data-lucide="file-text" class="w-24 h-24 mb-4"></i>
+            <p class="text-xl">Fill out the form to generate a report.</p>
+        </div>
+
+        <!-- Generated Reports will be prepended here -->
+        <div id="reportsStack" class="flex flex-col-reverse gap-8 pb-10"></div>
+    </div>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl transform transition-all">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <i data-lucide="alert-circle" class="text-red-600 w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center mb-2">Missing Information</h3>
+            <p class="text-sm text-gray-500 text-center mb-6">Please provide all information required to generate the report.</p>
+            <div class="mt-5 sm:mt-6">
+                <button type="button" onclick="closeModal()" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://clifton-definitions.vercel.app/role_definitions.js"></script>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- DOMAIN METADATA ---
+        const DOMAIN_META = {
+            "Strategic Thinking": { nameCN: "战略思维", colorClass: "border-emerald-500/30 bg-emerald-900/20 text-emerald-100" },
+            "Influencing": { nameCN: "影响力", colorClass: "border-orange-500/30 bg-orange-900/20 text-orange-100" },
+            "Executing": { nameCN: "执行力", colorClass: "border-purple-500/30 bg-purple-900/20 text-purple-100" },
+            "Relationship Building": { nameCN: "关系建立", colorClass: "border-blue-500/30 bg-blue-900/20 text-blue-100" }
+        };
+
+        const THEME_DOMAINS = {
+            "Executing": ["achiever", "arranger", "belief", "consistency", "deliberate", "discipline", "focus", "responsibility", "restorative"],
+            "Influencing": ["activator", "command", "communication", "competition", "maximizer", "self-assurance", "significance", "woo"],
+            "Relationship Building": ["adaptability", "connectedness", "developer", "empathy", "harmony", "includer", "individualization", "positivity", "relator"],
+            "Strategic Thinking": ["analytical", "context", "futuristic", "ideation", "input", "intellection", "learner", "strategic"]
+        };
+
+        const THEME_DISPLAY_NAMES = {
+            "achiever": "成就 Achiever", "activator": "行动 Activator", "adaptability": "适应 Adaptability",
+            "analytical": "分析 Analytical", "arranger": "统筹 Arranger", "belief": "信仰 Belief",
+            "command": "统率 Command", "communication": "沟通 Communication", "competition": "竞争 Competition",
+            "connectedness": "关联 Connectedness", "consistency": "公平 Consistency", "context": "回顾 Context",
+            "deliberate": "审慎 Deliberate", "developer": "伯乐 Developer", "discipline": "纪律 Discipline",
+            "empathy": "体谅 Empathy", "focus": "专注 Focus", "futuristic": "前瞻 Futuristic",
+            "harmony": "和谐 Harmony", "ideation": "理念 Ideation", "includer": "包容 Includer",
+            "individualization": "个别 Individualization", "input": "搜集 Input", "intellection": "思维 Intellection",
+            "learner": "学习 Learner", "maximizer": "完美 Maximizer", "positivity": "积极 Positivity",
+            "relator": "交往 Relator", "responsibility": "责任 Responsibility", "restorative": "排难 Restorative",
+            "self-assurance": "自信 Self-Assurance", "significance": "追求 Significance", "strategic": "战略 Strategic",
+            "woo": "取悦 Woo"
+        };
+
+        // --- MASSIVE ROLE DEFINITIONS DATA (Injected Here) ---
+        // (Using the provided data structure)
+        const ROLE_DEFINITIONS = {
+            "achiever": {
+                "General": "您总是渴望有所建树。您体内有团烈火在熊熊燃烧，促使您多做事情，多出成果。您感到每一天似乎都是从零开始，必须完成一些有成就感的事情才能对自己感到满意。哪怕成就再小，如果这一天一无所获，您就会缺乏成就感。",
+                "Coach": "你可以帮助客户达成结果导向的目标。你可以帮助客户设定清晰的里程碑，并推动他们在每一次辅导结束时都有实质性的行动计划。你以身作则的内驱力高能量会感染客户，让他们不敢懈怠。",
+                "Senior Executive Leader": "你的领导风格就是“结果导向”。你为组织设定不知疲倦的节奏，对他人的最高赞赏就是认可他们的产出。你不仅关注愿景，更关注每天向愿景迈进的具体步伐。",
+                "Manager": "你打造的是一支高产出的团队。你通过设定明确的每日或每周目标来管理员工，你喜欢忙碌的氛围，无法容忍团队中有“吃空饷”的行为，你的团队总是以完成任务为荣。",
+                "Sales": "配额对你来说只是起跑线。达成目标后的满足感转瞬即逝，你甚至不会停下来庆祝，而是立刻开始寻找下一个潜在客户。你用成交量来衡量自己每一天的价值。",
+                "Employee - Technical": "你喜欢看着待办事项（Ticket）被一个个划掉，为了按时上线功能，你可能会不惜在周末加班，因为“未完成”的状态让你难以入睡。",
+                "Employee - Service": "你将每一次服务请求视为一个任务。一天结束时，处理了多少个工单、服务了多少个客户是你自我满足的来源。你不知疲倦，能比同事处理更多的工作量。",
+                "Social Media KOL": "你可以是日更达人。即便没有灵感，你也会逼自己产出。你的粉丝惊叹于你的高产和勤奋，你用持续不断的输出建立了自己的个人品牌壁垒。"
+            },
+            "activator": {
+                "General": "您最爱问：“我们什么时候可以开始？”您深知没有行动，一切皆为空谈。一旦做出决定，您就会行动，查看结果，继而学习并迭代。评判您的标准不是言辞，而是行动。",
+                "Coach": "你擅长打破客户的“分析瘫痪”。当客户还在犹豫不决时，你会有力地推一把：“别想了，先试错”。你的辅导节奏明快，总是聚焦于“此时此刻我们要开启什么”。",
+                "Senior Executive Leader": "你是变革的催化剂。在瞬息万变的市场中，你敢于在信息不全时拍板决策。你的格言是“只有行动才能带来结果”，你带领企业在试错中快速迭代前行。",
+                "Manager": "你不会让团队陷入无休止的会议。一旦有了初步想法，你会立即分配任务让大家动起来。你不怕下属犯错，只怕下属站着不动。",
+                "Sales": "你是促单高手。当客户还在犹豫时，你会大胆地提出成交请求：“我们可以什么时候签约？”你敏锐地察觉购买信号，并立刻采取行动，绝不让机会冷却。",
+                "Employee - Technical": "你推崇敏捷开发。你厌恶冗长的文档和审批，更愿意先写出原型（Prototype）跑起来再说。你是团队中那个喊着“先上线，再修复”的人。",
+                "Employee - Service": "你响应速度极快。客户的问题一出现，你立刻着手解决，并不是先去翻阅繁琐的手册。你的积极态度让客户感到问题正在被“实时”处理。",
+                "Social Media KOL": "你总能抓住当下的热点。热点出现的第一时间，你就会发布相关内容，而不是等想完善了再发。你的行动力让你总是走在流量的前沿。"
+            },
+            "adaptability": { "General": "您活在当下。您不把未来视为固定的目的地，而是由现在的选择创造的。您能自愿地对眼前需求作出回应。您不讨厌突如其来的要求，相反，您期待这种突发事件。您本质上是非常灵活的人。", "Coach": "你是极其灵活的引导者。如果客户在谈话中突然情绪崩溃或改变话题，你会自然地顺势而为，完全不被原定的辅导大纲束缚。你让客户感到无论发生什么，你都能接得住。", "Senior Executive Leader": "你是危机管理的能手。在市场动荡或突发事件面前，你比任何人都镇定。你不执着于长远的僵化战略，而是根据当下的局势，掌舵企业灵活转向。", "Manager": "你是团队的“减压阀”。当上级指令朝令夕改时，你不会抱怨，而是迅速调整团队的优先级。你营造了一种宽松的氛围，让员工在混乱中也能感到安心。", "Sales": "无论客户提出多么刁钻或意外的要求，你都能笑着应对。你不怕被客户放鸽子或临时改需求，你总能顺水推舟，在变化中找到新的成交机会。", "Employee - Technical": "你好像个救火队员。当生产环境突然崩溃，或者需求临时变更，别人会抓狂，而你却能兴奋地投入到这种突发状况中，并在混乱中保持高效。", "Employee - Service": "你从不照本宣科。面对千奇百怪的客户投诉和突发状况，你总能兵来将挡。你的淡定和随和，能迅速抚平愤怒客户的情绪。", "Social Media KOL": "你能驾驭各种突发状况，甚至哪怕是直播翻车也能变成一种娱乐效果。你不焦虑流量的波动，而是享受每天与粉丝互动的不可预测性。" },
+            "analytical": { "General": "您乐于挑战别人：“证明它”。对于其他人可能会迅速当作真理来接受的事物，您会采取批判性的态度。您热衷于探寻万物之道，用客观和冷静的态度进行调查分析，从而找到其中的根源和影响。", "Coach": "你是客户思维的“质检员”。你会通过层层追问，帮助客户剥离情绪，看到事实的真相。你的问题犀利而精准，逼迫客户面对逻辑漏洞，从而找到根本解。", "Senior Executive Leader": "你用数据治理公司。你不会被充满激情的提案冲昏头脑，你会冷静地问：“数据或者证据哪里？”你的决策必有坚实的事实基础。", "Manager": "你是客观的评判者。在绩效评估或解决团队冲突时，你不听一面之词，而是搜集事实依据。员工知道，只有拿出扎实的成果和数据才能说服你。", "Sales": "你是顾问型销售。你不会用花言巧语忽悠客户，而是用详实的数据、图表和案例分析来证明产品的价值。理性的客户非常信赖你的专业度。", "Employee - Technical": "你是Bug终结者。你热衷于探究代码报错背后的根本原因，不解决底层逻辑誓不罢休。你的代码结构严谨，逻辑清晰，经得起推敲。", "Employee - Service": "你擅长处理复杂的投诉。你会冷静地梳理客户遇到的问题链条，不带情绪地分析原因，给出一个逻辑自洽的解释和解决方案，让客户心服口服。", "Social Media KOL": "你是硬核测评博主或者犀利的评论家。你的内容不靠煽情，而靠干货和深度解析。粉丝关注你是因为相信你的客观和严谨，你是该领域的权威声音。" },
+            "arranger": { "General": "您是指挥家。面对复杂的环境，您喜欢管理所有变量，反复排列直至确信已将其排列为最佳组合。您是高效灵活的典范。您事无巨细，总在寻找最佳配置。", "Coach": "你能帮客户理清复杂的生活一团麻。你擅长帮客户重新配置他们的时间、资源和人际关系，优化资源利用效率。", "Senior Executive Leader": "你是排兵布阵的将领。你擅长调配全公司的资源来配合战略。你在多条业务线之间游刃有余，确保复杂的企业机器高效运转。", "Manager": "你是多任务处理的大师。你能同时管理多个项目，并准确地知道谁最适合做什么工作。你从不僵化，随时根据项目进度调整人员分工，追求团队效率最大化。", "Sales": "你擅长运作复杂的单子。你能协调内部的技术、法务、高层资源来配合你拿下大客户。你把销售过程看作一场即时战略游戏，总能找到最优配置。", "Employee - Technical": "你是系统架构师的好苗子。在面对复杂的系统集成时，你喜欢思考各模块如何交互。你也善于在开发过程中引入新的工具或流程来提升效率。", "Employee - Service": "你是调度专家。面对大量的客户请求，你能迅速判断轻重缓急，并调动身边的资源（如寻求同事帮助、查找知识库）来最快解决问题。", "Social Media KOL": "你是资源整合的高手。你的内容形式多样，擅长策划复杂的线上线下活动。你能把不同的热点、嘉宾和资源组合在一起，呈现出精彩的“大秀”。" },
+            "belief": { "General": "您在生活中遵循持久原则。您持有根深蒂固的理念和强烈的使命感，这赋予您的生活以意义和方向。信仰为您指明方向，指引您排除生活中的种种干扰。在他人眼中，您为人可靠，值得信任。", "Coach": "你是使命感的唤醒者。你帮助客户挖掘内心深处的价值观，让他们明白“为什么而活”。你的辅导不仅仅是解决问题，更是关于人生意义的探索。", "Senior Executive Leader": "你是企业的精神领袖。你不只谈利润，更谈企业的社会责任和核心价值。你的坚定信念为公司在动荡中指明了道德和使命的方向，吸引了一批追随者。", "Manager": "你通过共同的价值观凝聚团队。你关心的不仅仅是业绩，更是团队成员的人品和职业操守。你保护团队免受外界诱惑的干扰，坚持做“对的事”。", "Sales": "你只卖你相信的产品。一旦你认同了产品的价值，你的销售热情是发自内心的，这种真诚具有极强的感染力，客户会因为信任你的人格而买单。", "Employee - Technical": "你是技术伦理的守护者。你不会为了赶工期而写出垃圾代码，你对代码质量有近乎信仰般的坚持。你工作不仅仅为了薪水，更为了心中的技术理想。", "Employee - Service": "你把工作和服务看作一种奉献。你真心实意地想要帮助客户，这种发自内心的善意让客户深受感动。你在工作中始终坚守承诺，从不敷衍。", "Social Media KOL": "你是意见领袖。你的内容充满了强烈的主张和价值观，你不迎合大众，只吸引同频的人。你的粉丝忠诚度极高，因为他们追随的是你的信念。" },
+            "command": { "General": "您天性想掌控一切。您知道要做什么，并且愿意将自己的想法讲出来。您不怕对立，反而确信对立是解决难题的第一步。人们往往拥戴那些立场鲜明并愿意带领大家前进的人。", "Coach": "你是直言不讳的挑战者。你敢于直接指出客户的盲点和逃避行为，即便这可能会让客户感到不适。你的力量感，能打破客户的防御机制，推动真正的改变。", "Senior Executive Leader": "你是天生的掌舵人。在危机时刻，大家都会看向你，因为你敢于振臂高呼，敢于做出艰难的决定。你的强势风格让组织拥有了清晰的方向和秩序。", "Manager": "你是团队的定海神针。你指令清晰，赏罚分明。在团队遇到外部压力时，你会挺身而出保护下属；在内部，你要求绝对的坦诚和执行力，不容许混乱。", "Sales": "你是掌控型销售。在谈判桌上，你主导着对话的节奏。你不怕与客户对立，甚至会通过施压来推动成交。客户往往会被你的气场折服，愿意让你来主导合作。", "Employee - Technical": "你是技术攻坚的带头人。当技术方案争执不休时，你敢于拍板定案，并对结果负责。你不怕挑战权威，敢于指出架构中的致命缺陷。", "Employee - Service": "你擅长处理“硬骨头”。面对蛮横无理的客户，你不会唯唯诺诺，而是不卑不亢地控制局面，用坚定的态度赢得尊重并解决问题。", "Social Media KOL": "你是大胆直白的评论家。你的观点鲜明，爱憎分明，从不模棱两可。你的霸气和自信让你在网络争议中越战越勇，吸引了一批慕强的粉丝。" },
+            "communication": { "General": "您喜欢解释、描述、主持、演讲和写作。您能将想法和事件生动地呈现出来。您用语言勾画的图景可以激发人们的兴趣，澄清事实，并激励人们去行动。", "Coach": "你是会讲故事的教练。你善于用生动的比喻和案例，将深奥的道理变得浅显易懂，直击客户内心。你的语言富有感染力，能瞬间点燃客户的激情。", "Senior Executive Leader": "你是企业的首席发言人。无论是全员大会还是媒体采访，你都能通过精彩的演讲将公司的愿景描绘得栩栩如生，让员工和投资者热血沸腾。", "Manager": "你是团队的润滑剂。你擅长主持会议，能让沉闷的讨论变得生动有趣。你确保信息在团队内无损流动，总能把枯燥的任务描述得让人想去尝试。", "Sales": "你是天生的演说家。你的产品介绍不是说明书，而是一场脱口秀。你能精准地捕捉到能打动客户的词汇，用语言构建出的美好图景让客户迫不及待想要拥有。", "Employee - Technical": "你能把晦涩的代码逻辑翻译成“人话”讲给产品经理听，也能写出漂亮的技术文档。在技术分享会上，你是最受欢迎的讲师。", "Employee - Service": "你是话术高手。即使是拒绝客户，你也能说得让对方如沐春风。你善于用积极、共情的语言安抚情绪，让沟通本身成为一种愉悦的体验。", "Social Media KOL": "你是内容创作天才。无论是视频还是文字，你的表达方式总是那么抓人眼球。你懂得如何制造金句，你的内容具有极强的传播属性。" },
+            "competition": { "General": "对于您，表现就是最终标尺。当您环视四周时，能够本能地意识到别人的表现。您对成为第一有深深的渴望。无关努力程度，只关乎输赢。如果能比较，您就能竞争，如果能竞争，您就能取胜。", "Coach": "你会激发客户的胜负欲。你会问：“这真的是你能做到的最好吗？”你通过引入对比和标杆，激励客户不断挑战自我，追求卓越。", "Senior Executive Leader": "你视商场为战场，你的目标就是市场占有率第一。你紧盯着竞争对手的一举一动，这种危机感和必胜的决心推动着整个公司不断进取。", "Manager": "你带领的是一支冠军团队。你会公开展示业绩排行榜，激励成员之间良性竞争。你无法容忍平庸，你的团队文化就是“赢”。", "Sales": "你为赢单而生。没有比击败竞争对手抢下订单更让你兴奋的事了。你会为了成为销冠而日夜奋战，排名的数字是你最好的兴奋剂。", "Employee - Technical": "你喜欢技术比武。不管是黑客马拉松还是日常的代码优化，你都要证明自己的方案是最优的。你渴望成为团队里的技术第一人。", "Employee - Service": "你把客户满意度评分看作比赛。你会暗自和同事较劲，看谁接的单多，看谁的好评率高。这种好胜心让你提供了卓越的服务。", "Social Media KOL": "你关注排名和数据。粉丝数的增长、榜单的排名是你创作的动力。你会研究同赛道的对手，誓要做出比他们更爆款的内容。" },
+            "connectedness": { "General": "您深信事出必有因。您坚定地相信人与人之间是相互关联的，每个人都是宏观世界的一部分。您为人周到、体贴，为不同文化背景的人们筑起桥梁，开导别人看到更高尚的目标。", "Coach": "你帮客户看到更大的图景。当客户陷入琐事时，你引导他们看到事件背后的因果联系和长远意义。你让他们相信当下的苦难都是人生宏大剧本的一部分。", "Senior Executive Leader": "你是生态系统的构建者。你不仅关注公司内部，更关注公司与社会、环境、全球趋势的联系。你倾向于建立合作共赢的联盟，而非孤立发展。", "Manager": "你打破部门之间的那堵墙。你让团队成员意识到自己的工作如何影响下游，如何与整个公司的使命相连。你营造了一种像家庭一样互相支持、荣辱与共的团队氛围。", "Sales": "你不仅是卖产品，更是在建立连接。你相信每一次相遇都是缘分，你会从客户的个人兴趣、家庭聊起，建立深层的情感纽带，让客户觉得你是“同路人”。", "Employee - Technical": "你关注系统的整体性。你不会只盯着自己的一亩三分地，而是思考你的代码会对整个系统产生什么蝴蝶效应。你倾向于构建兼容性强、接口友好的系统。", "Employee - Service": "你把客户当亲人。你相信“善有善报”，因此你对待每一位客户都充满善意和耐心。你常能跨越角色，给客户提供一些额外的人生建议或帮助。", "Social Media KOL": "你传递的是爱与和平。你的内容充满了灵性和哲理，强调人与人、人与自然的连接。你吸引的是一群寻求心灵归属感的粉丝。" },
+            "consistency": { "General": "平衡对于您很重要。您深知需要公平待人。您自视为公平和正直的卫士，反对特殊化，深信只有在规则明确而人人适用的恒定环境中，才能发挥每个人的最大潜能。", "Coach": "你为客户提供稳定的支持框架。你坚持原则，不因客户的身份地位而改变辅导标准。你帮助客户建立规律的习惯和明确的界限。", "Senior Executive Leader": "你是制度的捍卫者。你致力于建立标准化的流程和透明的规则，确保公司内部没有特权阶级。你的管理风格稳定可预测，让员工感到安全。", "Manager": "你是一碗水端平的管理者。你痛恨偏袒，制定了清晰的规则并严格执行。在你的团队里，大家知道只要按流程办事，就会得到公正的对待。", "Sales": "你用标准化的流程赢单。你会制定一套标准的销售话术和跟进流程，并严格执行。客户信赖你，因为你的服务质量始终如一，不会忽高忽低。", "Employee - Technical": "你是规范的代码编写者。你严格遵守编码规范，痛恨不规范的命名和结构。你致力于让系统运行在一种可预测、标准化的状态下。", "Employee - Service": "你对待所有客户一视同仁。无论对方是大客户还是小散户，你都提供同样高质量的服务。你不喜欢给任何人开后门，坚守公司的政策底线。", "Social Media KOL": "你的人设稳定。你坚持固定的更新频率和风格，粉丝知道每天能在你这里期待什么。你不随波逐流，始终坚持自己的原则和底线。" },
+            "context": { "General": "您重视追溯性的观点，因为您可以从中找到很多问题的答案。您往回看是为了了解当前，从过去的经验中看清引领方向的蓝图。历史背景使得您在做出决策时更加自信。", "Coach": "你通过回溯过去来解决现在的问题。你会详细询问客户的成长经历和过往案例，帮助他们从过去的成功或失败中萃取经验，以此作为未来的路标。", "Senior Executive Leader": "你尊重企业的历史遗产。在制定新战略前，你会先研究公司过去的兴衰史。你擅长用历史眼光看问题，避免重蹈覆辙，确保企业文化一脉相承。", "Manager": "你通过案例教学。你喜欢在团队会议上复盘过去的项目，总结经验教训。当你接手新团队时，你会先花时间了解这里发生过什么，了解每个人背后的故事。", "Sales": "你通过了解客户背景建立信任。你会做足功课，研究客户公司的发展史。在谈话中，你引用过去的合作案例来证明产品的可靠性，让客户感到安心。", "Employee - Technical": "你重视遗留代码（Legacy Code）的价值。当别人急着重构时，你会先研究这段代码为什么这么写。你擅长通过分析历史日志来定位疑难杂症。", "Employee - Service": "你记忆力惊人。你能记得老客户以前的偏好和发生过的问题，这让客户感到极受重视。处理问题时，你会调阅历史记录，确保解决方案的连贯性。", "Social Media KOL": "你是复古或人文博主。你喜欢挖掘事物背后的历史渊源，讲故事娓娓道来。你的内容充满了厚重感和时间沉淀的智慧。" },
+            "deliberate": { "General": "您为人谨慎，处事机警。您能察觉到深处危机四伏，并将其揪出、评估、消除。对您而言，决策结果的正确性比决策过程中所需的时间重要很多。您小心翼翼地落脚，谨慎前行。", "Coach": "你是风险把控者。当客户头脑发热想要大干一场时，你会冷静地帮他们踩刹车，分析潜在的隐患。你的辅导让客户的决策更加周全、落地。", "Senior Executive Leader": "你是稳健的掌舵人。你厌恶鲁莽的冒险，在做重大决策前，你会进行详尽的尽职调查和风险评估。在你的带领下，公司或许不是跑得最快的，但一定是最稳的。", "Manager": "你从不轻易许诺。在给团队布置任务或给上级汇报时，你会留有余地。你挑选团队成员非常谨慎，但一旦录用，你会给予深度的信任。", "Sales": "你不打无准备之仗。你会仔细研究合同条款，确保没有法律风险。你不急于逼单，而是步步为营，确保每一个承诺都能兑现，从而赢得长期的信任。", "Employee - Technical": "你是代码安全卫士。你写代码时总是考虑到最坏的情况（Edge Cases），做足了异常处理。你宁愿推迟上线，也不能容忍系统带着隐患裸奔。", "Employee - Service": "你说话滴水不漏。面对客户的质问，你不会随意给出不确定的答复，而是确认无误后才告知。你的严谨避免了后续很多不必要的纠纷。", "Social Media KOL": "你非常爱惜羽毛。你发内容前会反复核查事实，绝不蹭有风险的热点。你的内容虽不多，但极其精准、私密，从不翻车。" },
+            "developer": { "General": "您能发现别人的潜能。您寻找各种途径挑战别人，为别人安排各种有趣的经历来增强能力。别人的进步如同燃料，给予您动力和满足。您孜孜不倦地搜寻进步的迹象。", "Coach": "这是你最天然的角色，你总能看到客户哪怕最微小的进步。你通过赞赏和肯定，让客户看到自己未被发掘的潜力，从而重拾自信。", "Senior Executive Leader": "你致力打造学习型组织。你视人才为公司最大的资产，愿意在员工培训和发展上投入重金。你享受看到实习生一步步成长为高管的过程。", "Manager": "你是最好的导师。你甚至比员工自己更关心他们的职业发展。你会耐心地手把手教导，容忍新人的笨拙，因为你知道那只是成长的必经之路。", "Sales": "你是客户成长的伙伴。你不仅卖产品，还教客户如何用好产品来提升业绩。你看着小客户因为你的产品而做大做强，这种成就感不亚于拿佣金。", "Employee - Technical": "你喜欢做Code Review。你乐于帮助初级工程师优化代码，解释原理。你是团队里的活字典，总是耐心地解答别人的技术问题。", "Employee - Service": "你是客户的引导者。对于不懂操作的客户，你有着极大的耐心，一步步教导他们，直到他们学会。你享受那种“教会别人”的满足感。", "Social Media KOL": "你是养成系博主或教育博主。你喜欢分享干货教程，看到粉丝在评论区说“学会了”、“进步了”，是你最大的动力。" },
+            "discipline": { "General": "您在组织有序的环境下茁壮成长。您喜欢可预测、井井有条的生活方式。您设定规则、制定时间表，力求准确。您的条理性使您非常高效。", "Coach": "你提供结构化的辅导。你严格遵守时间，每次会谈都有固定的流程和议程。你帮助混乱的客户建立生活秩序，制定精确到分钟的日程表。", "Senior Executive Leader": "你追求卓越的运营效率。你建立精细的管理体系，要求各部门动作整齐划一。你痛恨低效和混乱，你的公司就像瑞士钟表一样精准运转。", "Manager": "你是流程控。你为团队制定了详尽的SOP，并要求严格执行。你的项目计划表总是井井有条，没有任何细节会被遗漏。", "Sales": "你依靠勤奋和规律出单。你规定自己每天必须打多少个电话，拜访多少个客户，并严格记录CRM系统。你的成功源于这种日复一日的坚持和精准。", "Employee - Technical": "你有代码洁癖。你的文件目录结构清晰，注释规范。你严格遵循开发流程，从不走捷径。你的工作产出总是高质量且极易维护的。", "Employee - Service": "你从不出错。你严格按照服务手册操作，每一个步骤都精准无误。在处理繁琐的行政或数据录入工作时，你是最让人放心的。", "Social Media KOL": "你是自律的化身。你规划好了未来一个月的发布日历，并雷打不动地执行。你的内容排版工整，风格统一，给人一种极度专业的舒适感。" },
+            "empathy": { "General": "您善解人意，能与他人感同身受。您能听到无声的提问，并能预料到需求。别人为找到合适的词句而搜肠刮肚，您却总能用合适的语调说出恰如其分的话语。", "Coach": "你是情绪的容器。你不用对方开口，就能感受到他们内心的挣扎和痛苦。你的倾听让客户感到被完全接纳，从而愿意敞开心扉，疗愈创伤。", "Senior Executive Leader": "你是懂人心的高管。在做裁员或变革决策时，你会充分考虑员工的感受，并给予人性化的关怀。你营造了一种充满温情和心理安全感的企业文化。", "Manager": "你像家人一样关心下属。你能敏锐察觉到员工今天情绪不对，并主动关心。员工愿意为你卖命，因为他们觉得你真的懂他们，在乎他们。", "Sales": "你是顾问式销售。你能精准捕捉客户的痛点和情绪需求。你不是在推销，而是在帮助朋友解决烦恼。这种情感共鸣让客户对你产生极深的依赖。", "Employee - Technical": "你做出的产品最人性化。作为开发者，你能设身处地地站在小白用户的角度思考，设计出极具同理心的交互体验。", "Employee - Service": "你总是能善解人意的为他人着想。面对愤怒的客户，你首先安抚情绪：“我完全理解您的感受”。你的真诚能瞬间化解戾气，有将被投诉转化为被感谢的神奇能力。", "Social Media KOL": "你是治愈系博主。你的文字总是那么温柔，能戳中粉丝内心最柔软的地方。你是粉丝的情感树洞，大家在你的评论区里抱团取暖。" },
+            "focus": { "General": "您能够定好待办事务的优先级，而后再采取行动。您的目标如同罗盘，帮助您确定重点并进行必要的修正。您的专注力十分强大，促使您进行过滤，最终促成效率的提高。", "Coach": "你让客户始终盯紧靶心。当客户发散思维时，你会把他们拉回来：“这对你的核心目标有什么帮助？” 你帮助客户做减法，集中精力攻克最重要的事。", "Senior Executive Leader": "你坚持“少即是多”。你砍掉无关紧要的业务线，集中全公司的资源主攻一个战略高地。你的专注力让公司在细分领域做到了极致。", "Manager": "你是目标守护者。无论外界有多少干扰，你始终确保团队清楚当下的首要任务是什么。你保护团队不被琐事分心，保证项目按期交付。", "Sales": "你紧盯大客户。你会制定清晰的销售漏斗，剔除无效线索，把所有精力都花在那些最有可能成交、价值最大的机会上。", "Employee - Technical": "你进入心流状态极快。一旦开始写代码，你就会屏蔽周围的一切噪音。你喜欢长时间深入攻克一个技术难题，不喜欢被打断，因为那会影响你的效率感。", "Employee - Service": "你一次只解决一个问题。面对多任务，你会设定优先级，找到主线设置二八定律，或者优先快速解决最重要的那个。你的专注保证了处理问题的高效和准确。", "Social Media KOL": "你垂直深耕，不蹭无关的热点，始终聚焦在你的垂直领域。粉丝知道你是这个细分话题下的专家，关注你就是为了看这个。" },
+            "futuristic": { "General": "您喜欢遥望未来。您预见和想象明天的每个细节。您通常乐观地看待未来，这一愿景激励着您自己和别人。您能描绘一幅未来的画卷，为他人拓宽眼界，燃起激情。", "Coach": "你是梦想画师。你引导客户跳出眼前的苟且，去想象五年、十年后他们想成为什么样的人。你激发的愿景成为了客户当下行动的最强动力。", "Senior Executive Leader": "你是远见卓识的梦想家。你总是谈论未来五年的趋势，你布局的业务可能现在不赚钱，但在未来会成为行业颠覆者。你用“未来”来领导“现在”。", "Manager": "你给团队画饼，描绘项目成功后的美好蓝图，让团队成员明白当下的辛苦工作是在创造未来。你的激情感染着大家向前看。", "Sales": "你卖的是未来。你向客户展示使用了你的产品后，他们的公司在未来会变成什么样。你不仅解决当下的问题，更提供面向未来的解决方案。", "Employee - Technical": "你是技术极客。你总是关注最新的技术框架和趋势，喜欢在项目中尝试前沿技术。你写的代码具有前瞻性，考虑到了未来的扩展需求。", "Employee - Service": "你预判客户需求。你不仅仅解决客户当下的问题，还会提醒他们未来可能遇到的情况并给出建议。客户觉得你非常有远见。", "Social Media KOL": "你是趋势预测家。你总是比别人早一步发现新事物，你的内容充满了科幻感或未来感。粉丝关注你是为了透过你的眼睛看未来。" },
+            "harmony": { "General": "您追求安定和平，试图让他人团结起来。您认为冲突有害无益，所以尽量将其降到最低。您寻找机会帮助个人、家庭和组织展开合作，讨论大家能达成一致的现实问题。", "Coach": "你是和平使者。你帮助客户解决内心冲突或人际纠纷。你引导客户寻找共同点，用更务实、温和的方式去处理矛盾，达到内心的平静。", "Senior Executive Leader": "你擅长平衡利益。在董事会或高管会议上，你是那个能让激进派和保守派达成共识的人。你追求公司的稳健发展，避免因内耗而翻船。", "Manager": "你打造最小摩擦团队。你会尽力化解团队成员间的矛盾，并能帮助团队达成共识。你鼓励协作，强调“对事不对人”，创造了一个由于关系和谐而高效的工作环境。", "Sales": "你是关系型销售。你从不咄咄逼人，而是寻求双赢。如果客户有异议，你不会争辩，而是寻找双方都能接受的折中方案。客户觉得和你做生意很舒服。", "Employee - Technical": "你乐于配合他人，是最好相处的同事。你可能因不喜欢卷入技术路线的争吵，默默独自把大家的代码整合起来。", "Employee - Service": "你擅长息事宁人。面对冲突，你总是先退一步，用温和的态度化解对方的攻击性。你的目标是让客户带着满意的笑容离开，而不是争个输赢。", "Social Media KOL": "你的内容温和无害。你不参与网络骂战，不发表极端的引战言论。你的评论区总是一片祥和，大家喜欢你这里岁月静好的氛围。" },
+            "ideation": { "General": "您富有创造性，欣赏原创精神。您有种与生俱来的才干，能够从多个角度思考问题。您着迷于全新的想法和概念，每当产生一个新想法时，您都会为之一振。", "Coach": "你是脑洞大开的启发者。当客户思维卡壳时，你会抛出十个新奇的角度：“要是这样试一下呢？”你帮助客户打破思维定势，找到极具创意的解决方案。", "Senior Executive Leader": "你是首席创新官。你总是提出颠覆性的商业模式，不满足于现状。你的思维跳跃，总能从不相关的行业中找到灵感，带领公司不断创新。", "Manager": "你是头脑风暴的主持人。你鼓励团队提出疯狂的想法，哪怕不切实际。你擅长把看似矛盾或者看似毫无相关的点子串联在一起，创造出全新的项目方案。", "Sales": "你是定制化方案的高手。你不卖标准品，而是针对客户的特殊痛点，设计出独一无二的解决方案。客户为你的巧思和创意买单。", "Employee - Technical": "你是解决难题的黑客。面对常规方法解决不了的技术瓶颈，你总能想出另辟蹊径的怪招。你喜欢从0到1的创造性开发工作。", "Employee - Service": "你总有新点子。你会发明一些小妙招来提升服务效率，或者给客户带来意想不到的惊喜（Wow Moment）。你讨厌一成不变的机械工作。", "Social Media KOL": "你是创意鬼才。你的内容形式永远在变，脑洞大到让粉丝跟不上。你总是能从刁钻的角度解读事物，给粉丝带来持续的新鲜感。" },
+            "includer": { "General": "您将“扩大圈子”作为人生准则。您想要接纳他人，让他人觉得自己是团队的一员。您确信我们在本质上彼此相同，谁也不应该被忽视。您认为我们每个人都应参与。", "Coach": "你有海纳百川的胸怀。你不想让任何人掉队，可能会特别关注那些被他人边缘化的客户，帮助他们找到归属感。", "Senior Executive Leader": "你倡导多元包容（DEI）文化。你致力于打破部门壁垒，确保信息的公开透明。你希望听到基层的声音，让公司像一个大家庭。", "Manager": "你是新人的守护神。团队聚餐时，你会确保没人落单。你积极接纳不同背景的员工，善于挖掘那些内向、沉默员工的闪光点。", "Sales": "你做全覆盖销售。你不仅搞定决策者，也会尊重前台、助理等“小人物”。你的亲和力覆盖所有人，这让你在客户公司内部拥有广泛的群众基础。", "Employee - Technical": "你编写无障碍代码。你设计的产品会考虑到视障、听障等少数群体的需求。在开源社区，你热心欢迎每一个提问的新手。", "Employee - Service": "你对谁都很客气。不管是VIP还是普通路人，你都给予同样的尊重和热情。你特别照顾那些不懂流程的老人或弱势群体。", "Social Media KOL": "你是大众之友。你的内容门槛低，通俗易懂，致力于让更多人参与进来。你在评论区积极回复，让粉丝感觉自己是你圈子的一员。" },
+            "individualization": { "General": "您对每个人的与众不同之处充满兴趣。您不能容忍一概而论，您关注的是个人差异。您本能地观察每个人的风格和动机。您善于观察别人的长处，帮助打造高效的团队。", "Coach": "你提供高度定制化的辅导。你从不用一套模版服务所有人。你能精准识别每个客户独特的动机、天赋和学习风格，并因材施教，效果拔群。", "Senior Executive Leader": "你知人善任。你不仅仅看简历，更看重每个人的特质。你擅长根据高管的个人风格来调整组织架构，让每个人都在最适合的位置上发光。", "Manager": "你是最懂员工的上司。你知道谁需要公开表扬，谁喜欢私下鼓励；谁适合单打独斗，谁适合团队协作。你打造的团队就像精密的齿轮组，咬合完美。", "Sales": "你看人极准。只要聊几句，你就能摸清客户的脾气和决策风格，并瞬间切换你的沟通方式。你给每个客户推荐的产品配置都是独一无二的。", "Employee - Technical": "你擅长个性化配置。你喜欢把开发环境（IDE）调教得完全符合自己的习惯。在做产品时，你倾向于增加个性化设置功能，满足不同用户的偏好。", "Employee - Service": "你提供VIP级服务。你能记住客户喝咖啡加不加糖、喜欢靠窗还是走廊。这种对个人喜好的精准拿捏，让客户感到无比尊贵。", "Social Media KOL": "你擅长粉丝运营。你会给粉丝起昵称，记得铁粉的故事。你的内容让人觉得你是在“对我说话”，而不是对大众广播。" },
+            "input": { "General": "您充满好奇，总是想知道更多。您渴求信息，喜欢收集理念、书籍或事实。对新知识的追求保证您思维常新。您知道总有一天，收集来的信息会证明自身的价值。", "Coach": "你是行走的资源库。无论客户遇到什么问题，你都能立刻推荐一本书、一个工具或一个播客。你像多啦A梦一样，总能掏出客户需要的信息。", "Senior Executive Leader": "你是信息情报官。你像海绵一样吸收行业资讯、竞争情报和前沿趋势。你做的决策基于海量的外部信息输入，极具参考价值。", "Manager": "你是团队的知识库。你搜集了各种模版、案例和最佳实践分享给团队。大家遇到不懂的问题，第一反应就是来问你，因为你“什么都知道”。", "Sales": "你用见识征服客户。你不仅懂自家产品，还懂竞品，懂行业八卦，懂宏观经济。你和客户聊天资太丰富了，客户觉得和你聊天本身就是一种收获。", "Employee - Technical": "你是百宝箱，收藏了无数的GitHub库、技术博客和代码片段。遇到新需求时，你总能翻出类似的参考方案或者对路的工具。", "Employee - Service": "你是活地图。你对公司的政策、流程、甚至周边的外卖信息都了如指掌。客户问你任何问题，你都能给出一个确切的答案或指引。", "Social Media KOL": "你是干货搬运工或策展人。你擅长整理清单，比如“10个必好用工具”、“5本必读书”。粉丝关注你就是为了省去自己搜集信息的时间。" },
+            "intellection": { "General": "您喜欢思考，喜欢脑力活动。您喜欢锻炼大脑的“肌肉”。您善于自省，自省让您有时间反省和沉思。无论它将您引向何方，思考都是您生活中的常设项。", "Coach": "你是深度思考的陪练。你会留出大量的留白时间，让客户沉思。你提出的问题极具哲学深度，引导客户进行深层的自我反省和智力探索。", "Senior Executive Leader": "你是企业的哲学家。你不满足于表面的繁荣，你思考商业的本质、公司的终极使命。你需要独处的时间来推演战略，你的思想深度决定了企业的高度。", "Manager": "你总是问“为什么”。你鼓励团队不仅要低头拉车，更要抬头看路。在项目启动前，你会带领团队进行深度论证和复盘。", "Sales": "你是智力型销售。你喜欢和高知客户打交道，享受那种棋逢对手的智力博弈。你通过展示深刻的行业洞察来赢得客户的智力尊重。", "Employee - Technical": "你喜欢钻研算法。你享受解决那些需要极高智力投入的难题。你可能会花一下午盯着天花板思考架构，然后用半小时写出精妙绝伦的核心代码。", "Employee - Service": "你喜欢分析背后的本质。遇到客户问题，你会在脑海中认真思考，直到有了顿悟。你提供的不仅仅是服务，更是经过深思熟虑的建议。", "Social Media KOL": "你是深度内容创作者。你写长文、录长视频，探讨复杂的社会议题或哲学观点。你的粉丝是那些喜欢思考、不满足于快餐文化的人。" },
+            "learner": { "General": "您始终在努力学习，不断提高自我。对您而言，学习的过程和获得的知识同样重要。学习新知识、掌握新技能的过程深深吸引着您。更重要的是求知的过程，而不是学习的结果。", "Coach": "你和客户一起成长。每接一个新客户，你都会去研究他所在的行业。你对未知充满好奇，这种好学的态度激励客户也保持开放的心态去学习新技能。", "Senior Executive Leader": "你是首席学习官。你带头拥抱成长，率先学习AI、数字化等新概念。你消除了组织的僵化，让“持续改进”成为企业文化。", "Manager": "你让团队保持前沿。你总是第一时间引入新的工具和工作流。你鼓励员工考证、培训，把团队变成了一个高能的学习小组。", "Sales": "你是专家型销售。为了拿下一个客户，你会哪怕通宵也要把客户的业务领域学个底掉。客户惊讶于你作为一个外行，竟然比他们还懂行。", "Employee - Technical": "你是全栈潜力股。新语言、新框架一出来，你总是第一个尝鲜。你不在乎现在会不会，你在乎的是“我又有东西可以学了”，你是技术转型的先锋。", "Employee - Service": "你上手极快。新产品上线、新系统发布，你总是最先掌握操作手册的人。你享受那种从“不会”到“精通”的过程。", "Social Media KOL": "你分享自己的学习路径。你不仅展示成果，更展示你从零开始探索一个新领域的过程。你的好奇心感染着粉丝一起探索世界。" },
+            "maximizer": { "General": "您能在任何人之前看到别人的才干和优势。您乐于帮助别人，让他们为自己的潜能感到兴奋。您的标准和追求是卓越而非平凡。您以质量为导向，专注于优势领域。", "Coach": "你专注于从优秀到卓越。你对改善弱点或者烂摊子没兴趣，你只想帮助客户充分发挥他们的天赋和优势，并放大到极致。你不仅帮客户达标，更想把他们打造成为行业标杆。", "Senior Executive Leader": "你只做精品。你砍掉平庸的项目，只保留那些能做到世界级的产品。你对质量的苛求虽然让人压力山大，但确实带出了顶级的品牌声誉。", "Manager": "你唯才是举。你擅长把合适的人放在最能发挥其长处的位置。你不会试图改变员工的短板，而是通过团队配置来规避它，从而最大化团队效能。", "Sales": "你很挑客户。你喜欢服务大客户、高端客户，因为在他们身上你能实现最大的价值。你追求高客单价和极致的客户满意度。", "Employee - Technical": "你不仅要求代码能跑，还欣赏代码的美观和高效。你会不断打磨一个功能，直到它达到你心中的完美标准。", "Employee - Service": "你提供超越预期的服务。你觉得满意是不够的，你要的是客户的惊叹。你总是在标准流程之外，多做那1%的极致。", "Social Media KOL": "你是细节控。你的视频画质、剪辑节奏、文案措辞都经过反复打磨。你产出虽慢，但必属精品，粉丝愿意等你。" },
+            "positivity": { "General": "您从不吝啬赞美，笑容可掬，总是看到万物积极的一面。您总是找到方法为身边的人加油打气。您乐观、充满希望，设法让所有事情都显得激动人心。", "Coach": "你是啦啦队长。即使客户深陷泥潭，你也能帮他们找到一线希望。你的笑容和乐观具有极强的治愈力，让客户相信一切都会好起来的。", "Senior Executive Leader": "你是信心注入者。在市场寒冬，你的乐观演讲解冻了全公司的恐惧。你总是庆祝每一个微小胜利，让组织始终充满士气。", "Manager": "你创造快乐的工作氛围，从不吝啬赞美，总是能看到下属的进步。你的团队充满欢声笑语，员工因为开心所以高效。", "Sales": "你仿佛有让人无法拒绝的魔法。你总是笑容满面，充满能量。客户会被你的快乐感染，觉得买你的产品是一件开心的事。你也从不把被拒绝当回事，转身就能满血复活。", "Employee - Technical": "你是团队的开心果。当项目上线延期、Bug频出大家情绪低落时，你会讲个笑话活跃气氛。你积极的心态是团队在高压下的缓冲剂。", "Employee - Service": "你是微笑天使。无论客户多么暴躁，你都能用真诚的笑容化解坚冰。你把正能量传递给每一个接触你的人。", "Social Media KOL": "你是正能量博主。你的内容充满阳光、幽默和希望。粉丝来看你就是为了充电，为了在丧丧的生活中找回一点快乐。" },
+            "relator": { "General": "您从保持与密友的交往中获得巨大的欢乐和力量。您未必羞于结交陌生人，但您更珍视与密友的紧密关系。您可以和人们保持亲密的关系。", "Coach": "你建立深度的信任关系。你的客户往往会跟随你很多年，变成你的老友。你不轻易对陌生人敞开心扉，但在私密的一对一辅导中，你是最值得托付秘密的人。", "Senior Executive Leader": "你依靠核心圈子治理公司。你身边有一群跟随你多年的左膀右臂，这种绝对的信任让你们配合默契，决策执行效率极高。", "Manager": "你不想做管理者，而想做兄长或者大姐。你和团队成员的关系非常紧密，大家愿意为你挡子弹。你倾向于提拔内部知根知底的人，而不是空降兵。", "Sales": "你做熟客生意。你不喜欢广撒网，更喜欢深耕老客户。通过口碑转介绍（Referral）是你最强的获客方式。客户不仅买你的货，还把你当朋友。", "Employee - Technical": "你喜欢小而美的敏捷团队。你和那几个固定的搭档配合得天衣无缝，一个眼神就知道对方要什么接口。你不太喜欢频繁变动的项目组。", "Employee - Service": "你记得老客户的猫叫什么名字。你与客户建立的不是甲乙方关系，而是某种私人情谊。客户来办事，经常是为了顺便来看看你。", "Social Media KOL": "你像是在发朋友圈。你的内容真实、不做作，展示你生活本来的面目。粉丝觉得你是身边那个真实存在的朋友，而不是高高在上的偶像。" },
+            "responsibility": { "General": "您言而有信。您一旦做出承诺，从感情上就觉得有义务跟进并将其完全落实。您恪守承诺，事必躬亲。您不会让人失望，非常努力地履行自己的责任。", "Coach": "你把客户的成功当成自己的事。如果客户没达到目标，你会比客户还着急。你会主动跟进每一个承诺，绝不放客户鸽子。", "Senior Executive Leader": "你是企业的良心。你把股东、员工、客户的利益扛在肩上。你绝不甩锅，哪怕是下属的错误，你也会站出来说“这是我的责任”。", "Manager": "你是团队的保护伞。上级交代的任务，你一旦接下，就会用权力确保完成。下属跟着你最有安全感，因为天塌下来你会顶着。", "Sales": "你的口碑极佳。你言出必行，一旦答应，赴汤蹈火也要做到。客户信任你，因为知道把你当供应商，这事儿就稳了。", "Employee - Technical": "你拥有主人翁意识。哪怕代码不是你写的，只要现在归你管，出了问题你会第一时间冲上去修，而不是查Git记录看是谁的锅。", "Employee - Service": "你从不推诿。遇到不是你职责范围的问题，你不会说“这不归我管”，而是说“我帮您问问谁能解决”，并承担这种义务感，直到帮助客户解决问题。", "Social Media KOL": "你恰饭很谨慎。你对推荐的每一个产品都严格把关，因为你觉得自己对粉丝的信任负有责任。一旦出问题，你会第一时间道歉并赔偿。" },
+            "restorative": { "General": "您热衷于排忧解难。其他人遇到困难往往一筹莫展，而您却干劲倍增。分析症状、判断问题所在和解决问题的挑战令您无比兴奋。您喜欢修缮东西，让它们恢复正常。", "Coach": "你专治疑难杂症，妙手回春。客户的问题越棘手、越混乱，你相信总有解决的办法。你帮助客户修复破碎的关系、挽救濒临崩溃的事业，完成一个又一个Mission Impossible。", "Senior Executive Leader": "你擅长接手烂摊子，无论是财务危机还是管理混乱，你都能大刀阔斧地解决问题，让企业起死回生。", "Manager": "你是救火队长。当项目亮红灯时，你会第一时间介入，分析症结，把项目拉回正轨。你从不畏惧问题，因为问题就是你展现能力的舞台。", "Sales": "你擅长挽回流失客户。当客户因为不满要解约时，别人躲都来不及，你却主动冲上去解决投诉。你能把最愤怒的抱怨者转化为最忠诚的拥护者。", "Employee - Technical": "你是Debug大神。你最喜欢做的事就是在成千上万行代码中找到那个导致崩溃的Bug。修复红色的报错提示能带给你极大的快感。", "Employee - Service": "你是投诉处理专员。你专门解决别人解决不了的“钉子户”。你很享受那种把坏事变好事的过程。", "Social Media KOL": "你是打假或避坑博主。你喜欢揭露行业乱象，或者教粉丝如何修复生活中的各种问题。你的价值在于帮助粉丝解决痛点。" },
+            "self-assurance": { "General": "您深信自己的优势和能力。您不仅对自己的能力充满信心，而且对自己的判断充满信心。您内心有确定感，坚信自己选择的方向和做出的决定。", "Coach": "你是客户的定心丸。当客户自我怀疑时，你坚定地告诉他：“你能行，听我的。” 你强大的气场和笃定的判断，能借给客户力量去冒他们不敢冒的险。", "Senior Executive Leader": "你敢力排众议。当所有数据都模糊不清，所有人都在反对时，你敢凭直觉拍板：“就走这条路。”你的内心有罗盘，不被外界噪音干扰。", "Manager": "你大胆授权，相信自己的眼光，也相信团队的能力。你不搞微观管理，给下属极大的空间去发挥，因为你确信你能兜底。", "Sales": "你的气场压倒一切。你从不乞求订单，而是平等甚至略带强势地建议。客户会被你的自信折服，觉得“这么自信的人，产品一定差不了”。", "Employee - Technical": "你敢动核心代码。面对复杂的遗留系统，别人不敢碰，你敢重构。你坚信自己的技术方案是正确的，并能从容应对可能出现的问题。", "Employee - Service": "你不卑不亢。面对客户的无理取闹，你既不发火也不卑微，而是用一种从容淡定的姿态控制局面。你的自信气场就赢得了客户的尊重。", "Social Media KOL": "你走自己的路，不在乎黑粉的攻击，也不迎合算法。你坚信自己的风格是独一无二的。这种“我就是我”的态度极其圈粉。" },
+            "significance": { "General": "您希望别人看见您的价值，获得赏识。您希望自己的贡献至关重要、强效有力。这股强大的驱动力让您不断向上攀登、摆脱平庸、通向卓越。", "Coach": "你挑选高影响力的客户。你更愿意辅导CEO或行业领袖，因为你知道改变了他们，就能改变更多人。你希望你的辅导能留下传世的口碑。", "Senior Executive Leader": "你要留名青史。你不想只做一家赚钱的公司，你想做一家伟大的、改变行业的公司。你追求的是行业地位、媒体曝光和公众影响力。", "Manager": "你要把团队带成明星团队。你希望你的部门在公司里是最耀眼的，也是最受高层重视的。你会为团队争取展示机会，让每个人都被看见。", "Sales": "你要做销冠。你不满足于达标，你要站在领奖台上接受所有人的掌声。你喜欢挑战那种大家都觉得搞不定的大单子，来证明你的实力。", "Employee - Technical": "你要做核心项目。如果只是做边角料的维护工作，你会感到窒息。你要参与那些公司最重要、技术最难、影响用户最多的项目。", "Employee - Service": "你希望被点名表扬。你会为了客户的一封感谢信或锦旗而全力以赴。你希望在同事中脱颖而出，成为服务的标杆。", "Social Media KOL": "你天生属于舞台。你享受聚光灯，渴望百万加的阅读量。你的内容一定要有影响力，能引发全网讨论，你想成为那个引领风潮的人。" },
+            "strategic": { "General": "您有能力在纷繁复杂中找到最佳前行之路。这是一种独特的思维方式。当别人被复杂的事物所迷惑时，您却能识别其中的规律，并预想不同的可能性。", "Coach": "你帮客户看全局，找路径。当客户迷失在选项中时，你能迅速识别出那条“阻力最小的路径”。你的辅导就是帮助客户过滤噪音，找到破局的关键点。", "Senior Executive Leader": "你总是能看到备选方案（Plan B/C/D）。当竞争对手还在死磕一条路时，你已经看到了旁边的捷径。你擅长在复杂的局势中瞬间识别出规律，一击必中。", "Manager": "你预判可能的障碍。在项目开始前，你已经推演了可能出现的各种问题并想好了对策。你总能问出“如果发生了X怎么办？”，让团队避开雷区。", "Sales": "你是布局高手。你不会像无头苍蝇一样乱撞，而是分析客户的决策链，制定精准的攻单策略。你知道什么时候该进，什么时候该退，以此四两拨千斤。", "Employee - Technical": "你选型精准。在技术选型时，你能快速评估各种方案的利弊，找到最适合当前业务的那一个。你写的代码不仅解决现在的问题，更为未来的扩展留了后路。", "Employee - Service": "你能预判问题。在客户开口前，你已经根据现状猜到了他的需求，并提前准备好了解决方案。这种“读心术”般的服务让客户惊叹。", "Social Media KOL": "你懂算法。你不仅仅是做内容，你是在和平台博弈。你分析流量规律，制定发布策略，你知道怎么做能最大概率地引爆话题。" },
+            "woo": { "General": "您酷爱的挑战是结识陌生人并赢得其好感。您能轻松地融入人群，知道该说什么该做什么。您的生活中没有陌生人——只有尚未谋面的朋友。", "Coach": "你能在前三分钟内就让客户放下戒备。你充满魅力的开场让客户瞬间喜欢上你。你擅长把冷冰冰的辅导变成一场愉快的谈话，迅速建立亲和力。", "Senior Executive Leader": "你是公司的外交名片。你热衷于游走在各种社交场合，为公司结识潜在的合作伙伴和投资者。你的个人魅力就是公司最好的广告。", "Manager": "你是团队的社交中心。你让新员工第一天就感到像在家一样。你擅长搞团建，能把一群陌生人迅速捏合成一个热络的团队。", "Sales": "你是陌生拜访之王。别人害怕被拒绝，你却享受把陌生人变成朋友的过程。你不知疲倦地通过各种社交活动扩大漏斗，你的通讯录价值连城。", "Employee - Technical": "你是技术圈的交际花。你活跃在各种技术社区和大会上，认识很多大牛。遇到搞不定的技术难题，你一个电话就能摇到人帮忙。", "Employee - Service": "你让客户如沐春风。你不仅仅是办事，你还会夸客户的衣服好看，聊今天的天气。你用幽默和热情把枯燥的服务过程变得有趣。", "Social Media KOL": "你极具路人缘。你的性格讨喜，哪怕是路过的网友也会忍不住点个关注。你擅长制造互动话题，让评论区热闹非凡。" }
+        };
+
+        // Theme Mapping (Mapping Input Names to Keys)
+        function getThemeKey(inputName) {
+            const clean = inputName.toLowerCase().trim();
+            const map = {
+                "成就": "achiever", "行动": "activator", "适应": "adaptability", "分析": "analytical",
+                "统筹": "arranger", "信仰": "belief", "统率": "command", "沟通": "communication",
+                "竞争": "competition", "关联": "connectedness", "公平": "consistency", "一致性": "consistency",
+                "回顾": "context", "审慎": "deliberate", "伯乐": "developer", "纪律": "discipline",
+                "体谅": "empathy", "专注": "focus", "前瞻": "futuristic", "和谐": "harmony",
+                "理念": "ideation", "包容": "includer", "个别": "individualization", "搜集": "input",
+                "思维": "intellection", "学习": "learner", "完美": "maximizer", "积极": "positivity",
+                "交往": "relator", "责任": "responsibility", "排难": "restorative", "自信": "self-assurance",
+                "追求": "significance", "战略": "strategic", "取悦": "woo"
+            };
+            if (map[clean]) return map[clean];
+            return clean;
+        }
+
+        function getDomainForTheme(themeKey) {
+            for (const [domain, themes] of Object.entries(THEME_DOMAINS)) {
+                if (themes.includes(themeKey)) return domain;
+            }
+            return "Unknown";
+        }
+
+        function getDisplayName(inputName) {
+            const key = getThemeKey(inputName);
+            return THEME_DISPLAY_NAMES[key] || inputName;
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        function showModal() {
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function generateReport() {
+            const name = document.getElementById('inputName').value.trim();
+            const age = document.getElementById('inputAge').value.trim();
+            const country = document.getElementById('inputCountry').value.trim();
+            const city = document.getElementById('inputCity').value.trim();
+            const role = document.getElementById('inputRole').value;
+            const themesText = document.getElementById('inputThemes').value.trim();
+            
+            const scores = {
+                "Strategic Thinking": parseFloat(document.getElementById('scoreStrategic').value) || 0,
+                "Influencing": parseFloat(document.getElementById('scoreInfluencing').value) || 0,
+                "Executing": parseFloat(document.getElementById('scoreExecuting').value) || 0,
+                "Relationship Building": parseFloat(document.getElementById('scoreRelationship').value) || 0
+            };
+
+            if (!name || !age || !country || !city || !themesText || 
+                document.getElementById('scoreStrategic').value === '' || 
+                document.getElementById('scoreInfluencing').value === '' || 
+                document.getElementById('scoreExecuting').value === '' || 
+                document.getElementById('scoreRelationship').value === '') {
+                showModal();
+                return;
+            }
+
+            const allThemes = themesText.split(/\n/).map(t => t.trim()).filter(t => t.length > 0);
+            const cleanThemes = allThemes.map(t => t.replace(/^\d+[\.\)\s]+/, '')).slice(0, 34);
+            
+            if (cleanThemes.length === 0) {
+                showModal();
+                return;
+            }
+
+            const top12 = cleanThemes.slice(0, 12);
+
+            const totalScore = scores["Strategic Thinking"] + scores["Influencing"] + scores["Executing"] + scores["Relationship Building"];
+            const safeTotal = totalScore === 0 ? 1 : totalScore;
+            
+            const domainData = [
+                { 
+                    name: "Strategic Thinking", 
+                    nameCN: "战略思维",
+                    score: scores["Strategic Thinking"], 
+                    percentage: (scores["Strategic Thinking"] / safeTotal) * 100,
+                    color: "bg-emerald-600"
+                },
+                { 
+                    name: "Influencing", 
+                    nameCN: "影响力",
+                    score: scores["Influencing"], 
+                    percentage: (scores["Influencing"] / safeTotal) * 100,
+                    color: "bg-orange-500"
+                },
+                { 
+                    name: "Executing", 
+                    nameCN: "执行力",
+                    score: scores["Executing"], 
+                    percentage: (scores["Executing"] / safeTotal) * 100,
+                    color: "bg-purple-600"
+                },
+                { 
+                    name: "Relationship Building", 
+                    nameCN: "关系建立",
+                    score: scores["Relationship Building"], 
+                    percentage: (scores["Relationship Building"] / safeTotal) * 100,
+                    color: "bg-blue-500"
+                }
+            ];
+
+            domainData.sort((a, b) => b.percentage - a.percentage);
+
+            const content = generateDynamicContent(name, role, top12, age, city, country, scores, domainData);
+
+            const reportId = 'report-' + Date.now();
+            const reportHtml = `
+                <div id="${reportId}" class="fade-in-down w-full max-w-4xl mx-auto bg-constellation text-white shadow-2xl rounded-sm overflow-hidden mb-8 relative font-serif-custom border-t-8 border-[#D4AF37]">
+                    
+                    <!-- Download Buttons (Ignored by PDF generator) -->
+                    <div class="absolute top-4 right-4 z-50 flex gap-2" data-html2canvas-ignore="true">
+                        <button onclick="downloadHTML('${reportId}', '${name}')" 
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
+                            <i data-lucide="file-code" class="w-4 h-4"></i> Save HTML
+                        </button>
+                        <button onclick="downloadPDF('${reportId}', '${name}')" 
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
+                            <i data-lucide="download" class="w-4 h-4"></i> Save PDF
+                        </button>
+                    </div>
+
+                    <!-- Header -->
+                    <div class="p-8 pb-4 flex items-start justify-between">
+                        <img src="https://raw.githubusercontent.com/vivisongca/shared/main/logo.png" 
+                             alt="Logo" 
+                             style="width: auto; max-width: 2.5in; max-height: 1in; margin: 0.5in 0 0.5in 0.5in;">
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="px-12 py-6 relative">
+                        
+                        <h1 class="text-3xl font-bold mb-8 border-b-2 border-[#D4AF37] pb-4 inline-block text-champagne tracking-wide">
+                            CliftonStrengths® 优势分析报告
+                        </h1>
+
+                        <div class="mb-8 text-lg leading-relaxed text-gray-100">
+                            <p class="mb-4">亲爱的<span class="font-bold text-white text-xl">${name}</span>，</p>
+                            <p class="font-light text-base">${content.intro}</p>
+                        </div>
+
+                        <!-- Stacked Bar -->
+                        <div class="mb-10 font-sans-custom">
+                            <h3 class="text-sm uppercase tracking-widest text-champagne mb-3 border-b border-gray-700 pb-1 w-full">优势领域分布 (Strength Domains)</h3>
+                            <div class="w-full h-8 bg-slate-800/50 rounded-sm flex overflow-hidden border border-gray-700 relative text-xs font-bold text-white">
+                                ${domainData.map(domain => `
+                                    <div style="width: ${domain.percentage}%" class="h-full ${domain.color} flex items-center justify-center"></div>
+                                `).join('')}
+                            </div>
+                            <div class="flex flex-wrap gap-6 mt-3 text-xs text-gray-300 justify-start">
+                                ${domainData.map(domain => `
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 ${domain.color} rounded-sm"></div> 
+                                        ${domain.nameCN} (${domain.score}%)
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Interpretation -->
+                        <div class="mb-12 text-lg leading-relaxed text-gray-100">
+                            <h3 class="text-sm uppercase tracking-widest text-champagne mb-4 border-b border-gray-700 pb-1 font-sans-custom">深度解读 (Executive Summary)</h3>
+                            <div class="mb-4 font-light text-base space-y-4">
+                                ${content.body}
+                            </div>
+                            <p class="italic text-base text-champagne opacity-90 mt-8 border-l-2 border-[#D4AF37] pl-4 py-1">
+                                "${content.closing}"
+                            </p>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="mt-12 pt-6 border-t border-gray-800 flex justify-between items-end relative">
+                            <div class="text-xs text-gray-500 font-sans-custom">
+                                Prepared exclusively for ${name}<br>
+                                Confidential Analysis | ${city}, ${country}
+                            </div>
+                            <div class="relative bg-black p-1 border-gold-glow rounded-sm">
+                                <img src="https://raw.githubusercontent.com/vivisongca/shared/main/QRCode.png" 
+                                     alt="Scan Code" 
+                                     style="width: 80px; height: auto;">
+                            </div>
+                        </div>
+                        
+                        <div class="h-6"></div>
+
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('emptyState').style.display = 'none';
+            const stack = document.getElementById('reportsStack');
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = reportHtml;
+            stack.appendChild(wrapper.firstElementChild);
+            
+            // Refresh icons for new content
+            lucide.createIcons();
+        }
+
+        function downloadPDF(elementId, filename) {
+             const element = document.getElementById(elementId);
+             const opt = {
+                 margin:       0.2, 
+                 filename:     filename + '_CliftonStrengths_Analysis.pdf',
+                 image:        { type: 'jpeg', quality: 0.98 },
+                 html2canvas:  { scale: 2, useCORS: true, logging: true },
+                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+             };
+             
+             // Visual feedback
+             // Use a more specific selector to avoid conflicts in saved files
+             const btn = document.querySelector(`#${elementId} button[onclick*="downloadPDF"]`);
+             const originalContent = btn ? btn.innerHTML : 'Save PDF';
+             if (btn) btn.innerHTML = '<span class="text-xs">Generating...</span>';
+             
+             html2pdf().set(opt).from(element).save().then(() => {
+                 if (btn) btn.innerHTML = originalContent;
+                 if (window.lucide) lucide.createIcons();
+             });
+        }
+
+        function downloadHTML(elementId, filename) {
+            const originalElement = document.getElementById(elementId);
+            if (!originalElement) return;
+
+            // Clone to manipulate without affecting view
+            const clone = originalElement.cloneNode(true);
+
+            // We explicitly KEEP the buttons container now so they appear in the saved file.
+            // We inject the necessary scripts so they function correctly in the standalone file.
+
+            const injectedScripts = `
+                function downloadPDF(elementId, filename) {
+                     const element = document.getElementById(elementId);
+                     const opt = {
+                         margin:       0.2, 
+                         filename:     filename + '_CliftonStrengths_Analysis.pdf',
+                         image:        { type: 'jpeg', quality: 0.98 },
+                         html2canvas:  { scale: 2, useCORS: true, logging: true },
+                         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                     };
+                     
+                     const btn = document.querySelector('#' + elementId + ' button[onclick*="downloadPDF"]');
+                     const originalContent = btn ? btn.innerHTML : 'Save PDF';
+                     if(btn) btn.innerHTML = '<span class="text-xs">Generating...</span>';
+                     
+                     html2pdf().set(opt).from(element).save().then(() => {
+                         if(btn) btn.innerHTML = originalContent;
+                         if(window.lucide) lucide.createIcons();
+                     });
+                }
+                
+                function downloadHTML(elementId, filename) {
+                    // In the saved file, we can simply re-download the current document
+                    const content = document.documentElement.outerHTML;
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename + '_Strengths_Report.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            `;
+
+            // Construct the file
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filename} - Strengths Report</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script src="https://unpkg.com/lucide@latest"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+    ${document.querySelector('style').outerHTML}
+</head>
+<body class="bg-slate-200 min-h-screen p-8 flex justify-center">
+    ${clone.outerHTML}
+    <script>
+        ${injectedScripts}
+        lucide.createIcons();
+    <\/script>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}_Strengths_Report.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function generateDynamicContent(name, role, themes, age, city, country, scores, sortedDomainData) {
+            
+            const d1 = sortedDomainData[0];
+            const d2 = sortedDomainData[1];
+            const d3 = sortedDomainData[2];
+            let domainText = "";
+
+            // LOGIC: 
+            if (d1.percentage >= 45 && d2.percentage <25) {
+                // Case 1: Dominant Domain > 45% -> Only talk about 1st
+                domainText = `<p><strong>领域概览：</strong> 您的优势非常集中地体现在 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 领域。这意味着${getDomainActionCN(d1.nameCN)}是您应对挑战的首选模式。这种高度集中的天赋使您在${getDomainStrategy(d1.nameCN)}方面具有压倒性的优势。</p>`;
+            } else if (d1.percentage >= 45 && d2.percentage >=25) {
+                // Case 2: Top 2 > 70% -> Talk about 2
+                domainText = `<p><strong>领域概览：</strong> 您的优势主要由 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 和 <span class="text-gold-accent font-bold">${d2.nameCN}</span> 双重驱动。您在${getDomainActionCN(d1.nameCN)}的同时，也极具${getDomainActionCN(d2.nameCN)}的潜质。这种双引擎组合让您在面对复杂挑战时，既能${getDomainStrategy(d1.nameCN)}，又能${getDomainStrategy(d2.nameCN)}。</p>`;
+            } else if (d3.percentage >=23 && (d1.percentage + d2.percentage + d3.percentage >80)) {
+                // Case 3: Top 3 are all >= 23% and sum > 80 (lowest one is <20)
+                domainText = `<p><strong>领域概览：</strong> 您的优势分布呈现出“三足鼎立”的稳固态势。您在 <span class="text-gold-accent font-bold">${d1.nameCN}</span>、<span class="text-gold-accent font-bold">${d2.nameCN}</span> 以及 <span class="text-gold-accent font-bold">${d3.nameCN}</span> 这三大领域均有显著表现（占比均超过25%）。这意味着您不仅擅长${getDomainActionCN(d1.nameCN)}和${getDomainActionCN(d2.nameCN)}，同时在${getDomainActionCN(d3.nameCN)}方面也具备强大的支撑。这种均衡且强力的组合赋予了您极高的综合素质，让您在处理复杂局面时能从多维度切入，几乎没有明显的短板。</p>`;
+            } else if ((d1.percentage + d2.percentage) >= 57) {
+                // Case 2: Top 2 > 57% -> Talk about 2
+                domainText = `<p><strong>领域概览：</strong> 您的优势主要由 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 和 <span class="text-gold-accent font-bold">${d2.nameCN}</span> 双重驱动。您在${getDomainActionCN(d1.nameCN)}的同时，也极具${getDomainActionCN(d2.nameCN)}的潜质。这种双引擎组合让您在面对复杂挑战时，既能${getDomainStrategy(d1.nameCN)}，又能${getDomainStrategy(d2.nameCN)}。</p>`;
+            } else {
+                // Fallback for more scattered distributions
+                const relevantDomains = sortedDomainData.filter(d => d.percentage > 20).map(d => `<span class="text-gold-accent font-bold">${d.nameCN}</span>`).join("、");
+                domainText = `<p><strong>领域概览：</strong> 您的才干分布相对平均的分配在四大领域。这种多元化的配置赋予了您极强的适应性，您可以根据不同的情境灵活调动不同领域的优势。</p>`;
+            }
+
+            const topThemeName = getDisplayName(themes[0]);
+            
+            const roleIntros = {
+                "General": `很高兴为您解读 CliftonStrengths 优势报告。结合您目前在 ${city} 的生活环境与 ${country} 的文化背景，这份报告旨在揭示那些定义您独特潜力的思维、情感和行为模式。我们不仅关注您能做什么，更关注您如何以自己独有的方式做到卓越。`,
+                "Gallup Strength Coach": `作为一名盖洛普优势教练，审视您的个人报告让我们能更细腻地理解您的“教练风格”。您在 ${city} 的经历与背景将为您如何运用这些才干增添独特的色彩。这份报告会剖析您的核心才干如何转化为对他人的深层洞察与引导力。`,
+                "Senior Executive Leaders": `高层领导力始于高度的自我认知。基于您在 ${country} 的职业历程，这份报告揭示了您的领导力底色。您的才干组合不仅仅是个人优势，更是您制定战略、凝聚组织、推动变革的核心引擎。`,
+                "Managers": `卓越管理的艺术在于因才施用。这份报告将透过“高绩效团队领导力”的视角来解读您的优势。结合您在 ${city} 的管理环境，我们将分析您如何通过独特的才干组合来激励团队、分配资源并达成目标。`,
+                "Sales": `在竞争激烈的销售领域，您的核心竞争力源于您的真实性。身处 ${city} 这样多元的市场环境，您的才干组合决定了您如何建立信任、影响决策。本报告将重点分析您如何利用天赋优势在商业谈判中赢得主动。`,
+                "Employee - Technical": `技术领域的卓越往往源于特定的思维深度与解决问题的模式。这份报告揭示了您处理复杂问题、钻研专业知识背后的底层逻辑，帮助您在 ${country} 的专业领域中构建不可替代的技术壁垒。`,
+                "Employee - Service": `极致的服务源于真诚的连接与可靠的交付。您的才干主题描绘了您如何建立信任、管理预期以及在关键时刻超越客户期望。这份分析旨在强化您在日常互动中创造独特体验的天然能力。`,
+                "Social Media KOL": `在数字时代，您的“个人品牌”就是您个性的延伸。这份分析报告将探讨您的核心才干如何帮助您在 ${city} 乃至更广阔的网络空间中，发出独特的声音，建立忠实的社群，并持续输出有价值的内容。`
+            };
+
+            let bodyText = "";
+            bodyText += domainText;
+
+            // --- GRID PREPARATION ---
+            // Categorize top 12 themes by domain
+            const categorizedThemes = { "Strategic Thinking": [], "Influencing": [], "Executing": [], "Relationship Building": [] };
+            
+            // Mapping Role
+            const roleKeyMap = {
+                "General": "General", "Gallup Strength Coach": "Coach", "Senior Executive Leaders": "Senior Executive Leader",
+                "Managers": "Manager", "Sales": "Sales", "Employee - Technical": "Employee - Technical",
+                "Employee - Service": "Employee - Service", "Social Media KOL": "Social Media KOL"
+            };
+            const roleKey = roleKeyMap[role] || "General";
+
+            for (let i = 0; i < 12; i++) {
+                if (themes[i]) {
+                    const tNameRaw = themes[i];
+                    const key = getThemeKey(tNameRaw);
+                    const domain = getDomainForTheme(key);
+                    const tDisplayName = getDisplayName(tNameRaw);
+                    
+                    // Retrieve Role-Specific Definition
+                    let tDef = "";
+                    if (ROLE_DEFINITIONS[key] && ROLE_DEFINITIONS[key][roleKey]) tDef = ROLE_DEFINITIONS[key][roleKey];
+                    else if (ROLE_DEFINITIONS[key] && ROLE_DEFINITIONS[key]["General"]) tDef = ROLE_DEFINITIONS[key]["General"];
+                    else tDef = "这一才干为您提供独特优势。";
+
+                    const rank = i + 1;
+                    const content = `<div class="mb-5 last:mb-0"><span class="text-gold-accent font-bold text-lg block mb-1">【${rank}. ${tDisplayName}】</span><span class="text-sm opacity-90 leading-relaxed font-light">${tDef}</span></div>`;
+                    
+                    if (categorizedThemes[domain]) categorizedThemes[domain].push(content);
+                }
+            }
+
+            // --- TIAN ZI GE LAYOUT (Double Column Masonry) ---
+            // Left Column: Domain #1 (Top Left) + Domain #4 (Bottom Left)
+            // Right Column: Domain #2 (Top Right) + Domain #3 (Bottom Right)
+            // sortedDomainData is [High -> Low]. 
+            // 0=Rank1, 1=Rank2, 2=Rank3, 3=Rank4.
+            
+            const leftColDomains = [sortedDomainData[0], sortedDomainData[3]]; // TL, BL
+            const rightColDomains = [sortedDomainData[1], sortedDomainData[2]]; // TR, BR
+
+            bodyText += `<div class="mt-10 mb-6"><strong class="text-champagne text-lg block mb-4 border-b border-gray-700 pb-2">核心天赋全景图 (Top 12 Themes)</strong>`;
+            
+            // Flex container for desktop (row), stack for mobile (col)
+            bodyText += `<div class="flex flex-col md:flex-row gap-4 items-start">`; // items-start is crucial for masonry effect
+
+            // Helper to render a column
+            const renderColumn = (domains) => {
+                let colHtml = `<div class="flex-1 flex flex-col gap-4 w-full">`;
+                domains.forEach(d => {
+                    const domainId = d.name; // English key
+                    const meta = DOMAIN_META[domainId];
+                    const items = categorizedThemes[domainId];
+                    const isEmpty = items.length === 0;
+                    
+                    colHtml += `
+                        <div class="glass-panel rounded-lg p-6 border-t-4 ${meta.colorClass} transition hover:bg-white/5">
+                            <h4 class="font-bold uppercase tracking-wider text-sm mb-4 opacity-80 flex items-center gap-2 border-b border-white/10 pb-2">
+                                 ${meta.nameCN} <span class="text-[10px] opacity-60 ml-1">(${domainId})</span>
+                                 <span class="bg-white/10 text-white text-xs py-0.5 px-2 rounded-full ml-auto">${items.length}</span>
+                            </h4>
+                            <div>
+                                ${isEmpty 
+                                    ? '<div class="text-xs text-gray-500 italic py-2">您的 Top 12 中暂无此领域的才干。</div>' 
+                                    : items.join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                colHtml += `</div>`;
+                return colHtml;
+            };
+
+            bodyText += renderColumn(leftColDomains);
+            bodyText += renderColumn(rightColDomains);
+
+            bodyText += `</div></div>`;
+
+            const closings = [
+                `释放 【${topThemeName}】 的潜能，将是您通往卓越的关键钥匙。`,
+                `您 ${d1.nameCN} 的天赋是您最宝贵的资产。`,
+                `请继续打磨这些天赋。世界需要您这份独一无二的贡献。`,
+                `让 【${topThemeName}】 成为您的罗盘，让 ${d1.nameCN} 成为您的锚点。`
+            ];
+
+            return {
+                intro: roleIntros[role] || roleIntros["General"],
+                body: bodyText,
+                closing: closings[Math.floor(Math.random() * closings.length)]
+            };
+        }
+
+        function getDomainActionCN(domainCN) {
+            switch(domainCN) {
+                case "战略思维": return "分析局势、运筹帷幄";
+                case "影响力": return "感召他人、传递理念";
+                case "执行力": return "落地目标、高效产出";
+                case "关系建立": return "凝聚团队、建立深交";
+                default: return "发挥天赋";
+            }
+        }
+
+        function getDomainStrategy(domainCN) {
+            switch(domainCN) {
+                case "战略思维": return "看清未来方向";
+                case "影响力": return "赢得他人支持";
+                case "执行力": return "将想法变为现实";
+                case "关系建立": return "打造坚实的信任基础";
+                default: return "利用自身优势";
+            }
+        }
+    </script>
+</body>
+</html>
