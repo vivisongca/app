@@ -472,20 +472,23 @@
             const d3 = sortedDomainData[2];
             let domainText = "";
 
-            // LOGIC: >45%, >67% (Top 2), >20% (Top 3)
-            if (d1.percentage >= 45) {
+            // LOGIC: 
+            if (d1.percentage >= 45 && d2.percentage <25) {
                 // Case 1: Dominant Domain > 45% -> Only talk about 1st
                 domainText = `<p><strong>领域概览：</strong> 您的优势非常集中地体现在 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 领域。这意味着${getDomainActionCN(d1.nameCN)}是您应对挑战的首选模式。这种高度集中的天赋使您在${getDomainStrategy(d1.nameCN)}方面具有压倒性的优势。</p>`;
-            } else if ((d1.percentage + d2.percentage) >= 55) {
-                // Case 2: Top 2 > 67% -> Talk about 2
+            } else if (d1.percentage >= 45 && d2.percentage >=25) {
+                // Case 2: Top 2 > 70% -> Talk about 2
                 domainText = `<p><strong>领域概览：</strong> 您的优势主要由 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 和 <span class="text-gold-accent font-bold">${d2.nameCN}</span> 双重驱动。您在${getDomainActionCN(d1.nameCN)}的同时，也极具${getDomainActionCN(d2.nameCN)}的潜质。这种双引擎组合让您在面对复杂挑战时，既能${getDomainStrategy(d1.nameCN)}，又能${getDomainStrategy(d2.nameCN)}。</p>`;
-            } else if (d3.percentage >= 22) {
-                // Case 3: Top 3 are all > 22% (Specifically requested logic)
+            } else if (d3.percentage >=23 && (d1.percentage + d2.percentage + d3.percentage >80)) {
+                // Case 3: Top 3 are all >= 23% and sum > 80 (lowest one is <20)
                 domainText = `<p><strong>领域概览：</strong> 您的优势分布呈现出“三足鼎立”的稳固态势。您在 <span class="text-gold-accent font-bold">${d1.nameCN}</span>、<span class="text-gold-accent font-bold">${d2.nameCN}</span> 以及 <span class="text-gold-accent font-bold">${d3.nameCN}</span> 这三大领域均有显著表现（占比均超过25%）。这意味着您不仅擅长${getDomainActionCN(d1.nameCN)}和${getDomainActionCN(d2.nameCN)}，同时在${getDomainActionCN(d3.nameCN)}方面也具备强大的支撑。这种均衡且强力的组合赋予了您极高的综合素质，让您在处理复杂局面时能从多维度切入，几乎没有明显的短板。</p>`;
+            } else if ((d1.percentage + d2.percentage) >= 57) {
+                // Case 2: Top 2 > 57% -> Talk about 2
+                domainText = `<p><strong>领域概览：</strong> 您的优势主要由 <span class="text-gold-accent font-bold">${d1.nameCN}</span> 和 <span class="text-gold-accent font-bold">${d2.nameCN}</span> 双重驱动。您在${getDomainActionCN(d1.nameCN)}的同时，也极具${getDomainActionCN(d2.nameCN)}的潜质。这种双引擎组合让您在面对复杂挑战时，既能${getDomainStrategy(d1.nameCN)}，又能${getDomainStrategy(d2.nameCN)}。</p>`;
             } else {
                 // Fallback for more scattered distributions
                 const relevantDomains = sortedDomainData.filter(d => d.percentage > 20).map(d => `<span class="text-gold-accent font-bold">${d.nameCN}</span>`).join("、");
-                domainText = `<p><strong>领域概览：</strong> 您的才干分布相对广泛，主要跨越了 ${relevantDomains} 等领域。这种多元化的配置赋予了您极强的适应性，您可以根据不同的情境灵活调动不同领域的优势。</p>`;
+                domainText = `<p><strong>领域概览：</strong> 您的才干分布相对平均的分配在四大领域。这种多元化的配置赋予了您极强的适应性，您可以根据不同的情境灵活调动不同领域的优势。</p>`;
             }
 
             const topThemeName = getDisplayName(themes[0]);
