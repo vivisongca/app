@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Noto+Serif+SC:wght@300;400;700&display=swap');
 
@@ -391,6 +393,13 @@
             const reportHtml = `
                 <div id="${reportId}" class="fade-in-down w-full max-w-4xl mx-auto bg-constellation text-white shadow-2xl rounded-sm overflow-hidden mb-8 relative font-serif-custom border-t-8 border-[#D4AF37]">
                     
+                    <!-- Download Button (Ignored by PDF generator) -->
+                    <button onclick="downloadPDF('${reportId}', '${name}')" 
+                            data-html2canvas-ignore="true"
+                            class="absolute top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
+                        <i data-lucide="download" class="w-4 h-4"></i> Download PDF
+                    </button>
+
                     <!-- Header -->
                     <div class="p-8 pb-4 flex items-start justify-between">
                         <img src="https://raw.githubusercontent.com/vivisongca/shared/main/logo.png" 
@@ -463,6 +472,30 @@
             const wrapper = document.createElement('div');
             wrapper.innerHTML = reportHtml;
             stack.appendChild(wrapper.firstElementChild);
+            
+            // Refresh icons for new content
+            lucide.createIcons();
+        }
+
+        function downloadPDF(elementId, filename) {
+             const element = document.getElementById(elementId);
+             const opt = {
+                 margin:       0.2, 
+                 filename:     filename + '_CliftonStrengths_Analysis.pdf',
+                 image:        { type: 'jpeg', quality: 0.98 },
+                 html2canvas:  { scale: 2, useCORS: true, logging: true },
+                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+             };
+             
+             // Visual feedback
+             const btn = document.querySelector(`button[onclick*="${elementId}"]`);
+             const originalContent = btn.innerHTML;
+             btn.innerHTML = '<span class="text-xs">Generating...</span>';
+             
+             html2pdf().set(opt).from(element).save().then(() => {
+                 btn.innerHTML = originalContent;
+                 lucide.createIcons();
+             });
         }
 
         function generateDynamicContent(name, role, themes, age, city, country, scores, sortedDomainData) {
