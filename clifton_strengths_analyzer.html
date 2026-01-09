@@ -393,12 +393,17 @@
             const reportHtml = `
                 <div id="${reportId}" class="fade-in-down w-full max-w-4xl mx-auto bg-constellation text-white shadow-2xl rounded-sm overflow-hidden mb-8 relative font-serif-custom border-t-8 border-[#D4AF37]">
                     
-                    <!-- Download Button (Ignored by PDF generator) -->
-                    <button onclick="downloadPDF('${reportId}', '${name}')" 
-                            data-html2canvas-ignore="true"
-                            class="absolute top-4 right-4 z-50 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
-                        <i data-lucide="download" class="w-4 h-4"></i> Download PDF
-                    </button>
+                    <!-- Download Buttons (Ignored by PDF generator) -->
+                    <div class="absolute top-4 right-4 z-50 flex gap-2" data-html2canvas-ignore="true">
+                        <button onclick="downloadHTML('${reportId}', '${name}')" 
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
+                            <i data-lucide="file-code" class="w-4 h-4"></i> Save HTML
+                        </button>
+                        <button onclick="downloadPDF('${reportId}', '${name}')" 
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded shadow-lg flex items-center gap-2 text-sm font-sans-custom transition-all">
+                            <i data-lucide="download" class="w-4 h-4"></i> Save PDF
+                        </button>
+                    </div>
 
                     <!-- Header -->
                     <div class="p-8 pb-4 flex items-start justify-between">
@@ -455,9 +460,9 @@
                                 Confidential Analysis | ${city}, ${country}
                             </div>
                             <div class="relative bg-black p-1 border-gold-glow rounded-sm">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://github.com/vivisongca" 
+                                <img src="https://raw.githubusercontent.com/vivisongca/shared/main/QRCode.png" 
                                      alt="Scan Code" 
-                                     style="width: 80px; height: 80px;">
+                                     style="width: 80px; height: auto;">
                             </div>
                         </div>
                         
@@ -488,14 +493,93 @@
              };
              
              // Visual feedback
-             const btn = document.querySelector(`button[onclick*="${elementId}"]`);
-             const originalContent = btn.innerHTML;
-             btn.innerHTML = '<span class="text-xs">Generating...</span>';
+             // Use a more specific selector to avoid conflicts in saved files
+             const btn = document.querySelector(`#${elementId} button[onclick*="downloadPDF"]`);
+             const originalContent = btn ? btn.innerHTML : 'Save PDF';
+             if (btn) btn.innerHTML = '<span class="text-xs">Generating...</span>';
              
              html2pdf().set(opt).from(element).save().then(() => {
-                 btn.innerHTML = originalContent;
-                 lucide.createIcons();
+                 if (btn) btn.innerHTML = originalContent;
+                 if (window.lucide) lucide.createIcons();
              });
+        }
+
+        function downloadHTML(elementId, filename) {
+            const originalElement = document.getElementById(elementId);
+            if (!originalElement) return;
+
+            // Clone to manipulate without affecting view
+            const clone = originalElement.cloneNode(true);
+
+            // We explicitly KEEP the buttons container now so they appear in the saved file.
+            // We inject the necessary scripts so they function correctly in the standalone file.
+
+            const injectedScripts = `
+                function downloadPDF(elementId, filename) {
+                     const element = document.getElementById(elementId);
+                     const opt = {
+                         margin:       0.2, 
+                         filename:     filename + '_CliftonStrengths_Analysis.pdf',
+                         image:        { type: 'jpeg', quality: 0.98 },
+                         html2canvas:  { scale: 2, useCORS: true, logging: true },
+                         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                     };
+                     
+                     const btn = document.querySelector('#' + elementId + ' button[onclick*="downloadPDF"]');
+                     const originalContent = btn ? btn.innerHTML : 'Save PDF';
+                     if(btn) btn.innerHTML = '<span class="text-xs">Generating...</span>';
+                     
+                     html2pdf().set(opt).from(element).save().then(() => {
+                         if(btn) btn.innerHTML = originalContent;
+                         if(window.lucide) lucide.createIcons();
+                     });
+                }
+                
+                function downloadHTML(elementId, filename) {
+                    // In the saved file, we can simply re-download the current document
+                    const content = document.documentElement.outerHTML;
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename + '_Strengths_Report.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            `;
+
+            // Construct the file
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filename} - Strengths Report</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script src="https://unpkg.com/lucide@latest"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+    ${document.querySelector('style').outerHTML}
+</head>
+<body class="bg-slate-200 min-h-screen p-8 flex justify-center">
+    ${clone.outerHTML}
+    <script>
+        ${injectedScripts}
+        lucide.createIcons();
+    <\/script>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}_Strengths_Report.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function generateDynamicContent(name, role, themes, age, city, country, scores, sortedDomainData) {
